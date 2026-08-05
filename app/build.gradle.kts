@@ -2,39 +2,36 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
-
 android {
     namespace = "com.rynekryz.rynotes"
     compileSdk = 37
-
     androidResources {
         localeFilters += "en"
     }
-
     defaultConfig {
         applicationId = "com.rynekryz.rynotes"
         minSdk = 31
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.0.1-alpha"
     }
-
     buildFeatures {
         compose = true
+    	  buildConfig = true
     }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
-
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -42,6 +39,32 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
+        }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            val abiFilter = output.filters.find {
+                it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
+            }?.identifier
+            val abiName = when (abiFilter) {
+                "arm64-v8a" -> "arm64"
+                "armeabi-v7a" -> "armv7"
+                "x86_64" -> "x86_64"
+                else -> abiFilter ?: "universal"
+            }
+            val buildTypeName = variant.buildType ?: "debug"
+            output.outputFileName.set("rynotes-0.0.1-alpha-$abiName-$buildTypeName.apk")
         }
     }
 }

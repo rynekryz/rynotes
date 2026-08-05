@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.core.net.toUri
+import com.rynekryz.rynotes.BuildConfig
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
@@ -128,6 +129,7 @@ fun SettingsScreen(
             context.packageManager.getPackageInfo(context.packageName, 0).versionCode
         }.getOrNull() ?: 1
     }
+    val buildTypeLabel = remember { if (BuildConfig.DEBUG) "debug" else "release" }
 
     fun openUrl(url: String) {
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) }
@@ -320,7 +322,7 @@ fun SettingsScreen(
                 Surface(onClick = { aboutHaptics.click(); openUrl("https://github.com/rynekryz") }, color = Color.Transparent) {
                     ListItem(
                         headlineContent = { Text("RyNotes", fontWeight = FontWeight.Bold) },
-                        supportingContent = { Text("v$versionName ($versionCode) · by Ryne") },
+                        supportingContent = { Text("v$versionName ($versionCode) · $buildTypeLabel · by Ryne") },
                         leadingContent = { Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
