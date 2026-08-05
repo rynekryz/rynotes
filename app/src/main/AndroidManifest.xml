@@ -1,0 +1,79 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.RyNotes">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.RyNotes"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          Dynamic app icon setup.
+
+          Only ONE alias may be enabled at a time — the disabled one must be
+          explicitly turned off, or the launcher will show two icons.
+          MainActivity itself no longer has the LAUNCHER intent-filter or
+          exported="true"; the aliases below own that instead and both
+          forward to it via android:targetActivity.
+
+          To switch icons at runtime, call this for the alias you're turning
+          ON and its counterpart with DISABLED for the one you're turning OFF:
+
+              val pm = packageManager
+              pm.setComponentEnabledSetting(
+                  ComponentName(this, "com.example.rynotes.MainActivityAlt"),
+                  PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                  PackageManager.DONT_KILL_APP
+              )
+              pm.setComponentEnabledSetting(
+                  ComponentName(this, "com.example.rynotes.MainActivityDefault"),
+                  PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                  PackageManager.DONT_KILL_APP
+              )
+
+          (Swap the two calls to switch back.) Replace "com.example.rynotes"
+          below with this app's actual applicationId if it differs.
+        -->
+        <activity-alias
+            android:name=".MainActivityDefault"
+            android:targetActivity=".MainActivity"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".MainActivityAlt"
+            android:targetActivity=".MainActivity"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_alt"
+            android:enabled="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+    </application>
+</manifest>

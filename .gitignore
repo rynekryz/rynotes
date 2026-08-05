@@ -1,0 +1,55 @@
+# Built artifacts
+bin/
+gen/
+out/
+build/
+.gradle/
+.kotlin/
+
+# Gradle and Kotlin files
+gradle-app.setting
+.gradletasknamecache
+
+# Local configuration
+local.properties
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetDropDown.xml
+
+# Log files
+*.log
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Android Studio / IntelliJ specific files
+*.iml
+.idea/modules
+.idea/shelf
+/captures/
+.externalNativeBuild
+.cxx
+memory_recordings/
+
+# Other
+*.bak
+*~
+*.swp
+*.patch
+*.diff
+
+# Keystore files (NEVER commit these)
+*.jks
+*.keystore
+*.p12
+
+# Google Services (often contains sensitive keys)
+# google-services.json
+
+# App-specific build folders
+app/build/
