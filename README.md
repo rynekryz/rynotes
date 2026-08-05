@@ -2,6 +2,11 @@
 
 **RyNotes** is a modern, lightweight, and secure notes application for Android. Built with **Jetpack Compose** and **Material 3 Expressive**, it offers a beautiful, fluid user experience while prioritizing your privacy and organization.
 
+[![Release](https://img.shields.io/github/v/release/rynekryz/rynotes?include_prereleases&label=release)](https://github.com/rynekryz/rynotes/releases)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
+> **Status:** Early alpha. Expect bugs and breaking changes between versions. See [Releases](https://github.com/rynekryz/rynotes/releases) for the latest APK.
+
 ---
 
 ## Features
@@ -36,7 +41,7 @@
 
 ## Technical Stack
 
-- **UI:** Jetpack Compose (1.4.0+ Material 3 Expressive)
+- **UI:** Jetpack Compose with Material 3 Expressive
 - **Architecture:** MVVM (Model-View-ViewModel)
 - **Data Persistence:** Jetpack DataStore (Preferences)
 - **Language:** 100% Kotlin
@@ -44,13 +49,28 @@
 
 ---
 
+## Download
+
+Grab the latest APK from the [Releases page](https://github.com/rynekryz/rynotes/releases). Pick the build matching your device:
+
+| Variant | Use case |
+|---|---|
+| `arm64` | Most modern phones (recommended) |
+| `armv7` | Older 32-bit devices |
+| `x86_64` | Emulators / x86 devices |
+| `universal` | Works on any device, larger file size |
+
+> Alpha builds are **debug builds**, not signed for production release yet.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
-- Android Studio Ladybug (or newer)
-- JDK 17
-- Android SDK 35 (Target)
-- Minimum SDK: Android 5.0 (API 21)
+- Android Studio (latest stable)
+- JDK 21
+- Android SDK 37 (compile target)
+- Minimum SDK: Android 12 (API 31)
 
 ### Build
 1. Clone the repository.
@@ -58,7 +78,7 @@
 3. Sync Gradle and run the `:app` module.
 
 ```bash
-# Build debug APK
+# Build debug APK (all ABIs + universal)
 ./gradlew assembleDebug
 ```
 
@@ -86,9 +106,10 @@ RyNotes/
 
 ## License
 
-Distributed under the GNU General Public License v3.0 (GPLv3). See `LICENSE` for more information.
+Distributed under the GNU General Public License v3.0 (GPLv3). See [LICENSE](LICENSE) for more information.
 
 ---
 
 ## Contributing
-Contributions are welcome! Feel free to open issues or submit pull requests.
+
+Contributions are welcome! Feel free to open [issues](https://github.com/rynekryz/rynotes/issues) or submit pull requests.
