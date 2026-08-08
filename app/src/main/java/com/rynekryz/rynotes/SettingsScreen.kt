@@ -142,14 +142,14 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            MediumTopAppBar(
+            TopAppBar(
                 title = { Text("Settings", fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = { topHaptics.click(); onBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -172,10 +172,16 @@ fun SettingsScreen(
                     trailingContent = {
                         Switch(
                             checked = viewModel.darkModeEnabled,
-                            onCheckedChange = viewModel::updateDarkMode
+                            onCheckedChange = {
+                                topHaptics.click()
+                                viewModel.updateDarkMode(it)
+                            }
                         )
                     },
-                    onClick = { viewModel.updateDarkMode(!viewModel.darkModeEnabled) }
+                    onClick = {
+                        topHaptics.click()
+                        viewModel.updateDarkMode(!viewModel.darkModeEnabled)
+                    }
                 )
                 if (viewModel.darkModeEnabled) {
                     SettingsItem(
@@ -186,10 +192,16 @@ fun SettingsScreen(
                         trailingContent = {
                             Switch(
                                 checked = viewModel.pureDarkMode,
-                                onCheckedChange = viewModel::updatePureDark
+                                onCheckedChange = {
+                                    topHaptics.click()
+                                    viewModel.updatePureDark(it)
+                                }
                             )
                         },
-                        onClick = { viewModel.updatePureDark(!viewModel.pureDarkMode) }
+                        onClick = {
+                            topHaptics.click()
+                            viewModel.updatePureDark(!viewModel.pureDarkMode)
+                        }
                     )
                 }
                 SettingsItem(
@@ -200,10 +212,16 @@ fun SettingsScreen(
                     trailingContent = {
                         Switch(
                             checked = viewModel.dynamicColorEnabled,
-                            onCheckedChange = viewModel::updateDynamicColor
+                            onCheckedChange = {
+                                topHaptics.click()
+                                viewModel.updateDynamicColor(it)
+                            }
                         )
                     },
-                    onClick = { viewModel.updateDynamicColor(!viewModel.dynamicColorEnabled) }
+                    onClick = {
+                        topHaptics.click()
+                        viewModel.updateDynamicColor(!viewModel.dynamicColorEnabled)
+                    }
                 )
             }
 
@@ -217,10 +235,17 @@ fun SettingsScreen(
                     trailingContent = {
                         Switch(
                             checked = viewModel.hapticsEnabled,
-                            onCheckedChange = viewModel::updateHaptics
+                            onCheckedChange = {
+                                viewModel.updateHaptics(it)
+                                if (it) topHaptics.click()
+                            }
                         )
                     },
-                    onClick = { viewModel.updateHaptics(!viewModel.hapticsEnabled) }
+                    onClick = {
+                        val next = !viewModel.hapticsEnabled
+                        viewModel.updateHaptics(next)
+                        if (next) topHaptics.click()
+                    }
                 )
                 SettingsItem(
                     icon = Icons.Filled.TextFields,
@@ -230,10 +255,16 @@ fun SettingsScreen(
                     trailingContent = {
                         Switch(
                             checked = viewModel.useSystemFont,
-                            onCheckedChange = viewModel::updateUseSystemFont
+                            onCheckedChange = {
+                                topHaptics.click()
+                                viewModel.updateUseSystemFont(it)
+                            }
                         )
                     },
-                    onClick = { viewModel.updateUseSystemFont(!viewModel.useSystemFont) }
+                    onClick = {
+                        topHaptics.click()
+                        viewModel.updateUseSystemFont(!viewModel.useSystemFont)
+                    }
                 )
                 Surface(
                     shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
@@ -254,9 +285,17 @@ fun SettingsScreen(
                             }
                         }
                         Spacer(Modifier.height(8.dp))
+                        var lastFontStep by remember { mutableStateOf(-1) }
                         Slider(
                             value = viewModel.fontScale,
-                            onValueChange = viewModel::updateFontScale,
+                            onValueChange = {
+                                val step = ((it - 0.8f) / 0.6f * 5).toInt()
+                                if (step != lastFontStep) {
+                                    lastFontStep = step
+                                    topHaptics.tick()
+                                }
+                                viewModel.updateFontScale(it)
+                            },
                             valueRange = 0.8f..1.4f,
                             steps = 5
                         )
@@ -282,6 +321,7 @@ fun SettingsScreen(
                         Switch(
                             checked = viewModel.hasAppLock,
                             onCheckedChange = { enabled ->
+                                topHaptics.click()
                                 if (enabled) {
                                     showAppLockSetup = true
                                 } else {
@@ -291,6 +331,7 @@ fun SettingsScreen(
                         )
                     },
                     onClick = {
+                        topHaptics.click()
                         if (viewModel.hasAppLock) {
                             requireVerification(DisableTarget.APP_LOCK) { showDisableLockConfirm = DisableTarget.APP_LOCK }
                         } else {
@@ -316,12 +357,14 @@ fun SettingsScreen(
                                 Switch(
                                     checked = viewModel.appLockBiometricEnabled,
                                     onCheckedChange = { enabled ->
+                                        topHaptics.click()
                                         if (enabled) viewModel.updateAppLockBiometricEnabled(true)
                                         else requireVerification(DisableTarget.APP_LOCK) { viewModel.updateAppLockBiometricEnabled(false) }
                                     }
                                 )
                             },
                             onClick = {
+                                topHaptics.click()
                                 if (viewModel.appLockBiometricEnabled) {
                                     requireVerification(DisableTarget.APP_LOCK) { viewModel.updateAppLockBiometricEnabled(false) }
                                 } else {
@@ -357,12 +400,14 @@ fun SettingsScreen(
                             Switch(
                                 checked = viewModel.vaultBiometricEnabled,
                                 onCheckedChange = { enabled ->
+                                    topHaptics.click()
                                     if (enabled) viewModel.updateVaultBiometricEnabled(true)
                                     else requireVerification(DisableTarget.VAULT) { viewModel.updateVaultBiometricEnabled(false) }
                                 }
                             )
                         },
                         onClick = {
+                            topHaptics.click()
                             if (viewModel.vaultBiometricEnabled) {
                                 requireVerification(DisableTarget.VAULT) { viewModel.updateVaultBiometricEnabled(false) }
                             } else {

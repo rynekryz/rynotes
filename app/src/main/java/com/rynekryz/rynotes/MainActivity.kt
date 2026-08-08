@@ -44,6 +44,8 @@ private sealed class Screen {
     data class Pdf(val uri: String) : Screen()
 }
 
+private data class ScreenEntry(val screen: Screen, val depth: Int)
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 class MainActivity : FragmentActivity() {
     private val vm: NoteViewModel by viewModels()
@@ -122,13 +124,17 @@ private fun RyNotesApp(
     }
 
     val current = backStack.last()
+    val currentDepth = backStack.size
 
     fun push(screen: Screen) {
+        if (backStack.lastOrNull() == screen) return
         backStack += screen
     }
 
     fun pop() {
-        if (backStack.size > 1) backStack = backStack.dropLast(1)
+        if (backStack.size > 1) {
+            backStack = backStack.dropLast(1)
+        }
     }
 
     var predictiveProgress by remember { mutableFloatStateOf(0f) }
@@ -142,7 +148,6 @@ private fun RyNotesApp(
             }
             pop()
         } catch (_: Exception) {
-            // gesture cancelled
         } finally {
             predictiveProgress = 0f
             isPredictiveBack = false
@@ -156,10 +161,11 @@ private fun RyNotesApp(
     )
 
     androidx.compose.animation.AnimatedContent(
-        targetState = current,
+        targetState = ScreenEntry(current, currentDepth),
         transitionSpec = {
-            val isEnteringEditor = (targetState is Screen.Editor) && (initialState !is Screen.Editor)
-            val isLeavingEditor = (initialState is Screen.Editor) && (targetState !is Screen.Editor)
+            val isEnteringEditor = (targetState.screen is Screen.Editor) && (initialState.screen !is Screen.Editor)
+            val isLeavingEditor = (initialState.screen is Screen.Editor) && (targetState.screen !is Screen.Editor)
+            val isBackNavigation = targetState.depth < initialState.depth
 
             val bouncySpring = spring<Float>(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -169,6 +175,7 @@ private fun RyNotesApp(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
                 stiffness = Spring.StiffnessLow
             )
+            val exitOffsetSpec = tween<androidx.compose.ui.unit.IntOffset>(durationMillis = 220)
 
             when {
                 isEnteringEditor -> {
@@ -191,10 +198,20 @@ private fun RyNotesApp(
                     ) + androidx.compose.animation.fadeIn(animationSpec = tween(240))) togetherWith
                         (androidx.compose.animation.slideOutVertically(
                             targetOffsetY = { it / 4 },
-                            animationSpec = bouncySpringOffset
+                            animationSpec = exitOffsetSpec
                         ) + androidx.compose.animation.scaleOut(
                             targetScale = 0.9f,
                             animationSpec = tween(220)
+                        ) + androidx.compose.animation.fadeOut(animationSpec = tween(180)))
+                }
+                isBackNavigation -> {
+                    (androidx.compose.animation.slideInHorizontally(
+                        initialOffsetX = { -it / 3 },
+                        animationSpec = bouncySpringOffset
+                    ) + androidx.compose.animation.fadeIn(animationSpec = tween(260))) togetherWith
+                        (androidx.compose.animation.slideOutHorizontally(
+                            targetOffsetX = { it / 5 },
+                            animationSpec = exitOffsetSpec
                         ) + androidx.compose.animation.fadeOut(animationSpec = tween(180)))
                 }
                 else -> {
@@ -204,13 +221,14 @@ private fun RyNotesApp(
                     ) + androidx.compose.animation.fadeIn(animationSpec = tween(260))) togetherWith
                         (androidx.compose.animation.slideOutHorizontally(
                             targetOffsetX = { -it / 5 },
-                            animationSpec = bouncySpringOffset
+                            animationSpec = exitOffsetSpec
                         ) + androidx.compose.animation.fadeOut(animationSpec = tween(180)))
                 }
             }
         },
         label = "screen"
-    ) { target ->
+    ) { entry ->
+        val target = entry.screen
         androidx.compose.foundation.layout.Box(
             modifier = Modifier
                 .fillMaxSize()

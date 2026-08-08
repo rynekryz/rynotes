@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
 @Composable
@@ -59,21 +60,26 @@ fun PinDots(length: Int, filled: Int) {
     }
 }
 
+private val PIN_PAD_ROWS = listOf(
+    listOf("1", "2", "3"),
+    listOf("4", "5", "6"),
+    listOf("7", "8", "9"),
+    listOf("", "0", "back")
+)
+
 @Composable
 fun PinPad(onDigit: (String) -> Unit, onBackspace: () -> Unit) {
-    val rows = listOf(
-        listOf("1", "2", "3"),
-        listOf("4", "5", "6"),
-        listOf("7", "8", "9"),
-        listOf("", "0", "back")
-    )
+    val haptics = rememberHaptics(LocalHapticsEnabled.current)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        rows.forEach { row ->
+        PIN_PAD_ROWS.forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                 row.forEach { key ->
                     when (key) {
                         "" -> Spacer(Modifier.size(64.dp))
-                        "back" -> IconButton(onClick = onBackspace, modifier = Modifier.size(64.dp)) {
+                        "back" -> IconButton(
+                            onClick = { haptics.click(); onBackspace() },
+                            modifier = Modifier.size(64.dp)
+                        ) {
                             Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = "Backspace")
                         }
                         else -> ExpressivePadKey(key = key) { onDigit(key) }
@@ -162,15 +168,17 @@ fun PatternPad(onPatternComplete: (String) -> Unit) {
 
     val dotScales = remember { (0 until dotCount).map { Animatable(1f) } }
     val haptics = rememberHaptics(LocalHapticsEnabled.current)
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(selected.lastOrNull()) {
-        val last = selected.lastOrNull() ?: return@LaunchedEffect
+    fun pulse(index: Int) {
         haptics.tick()
-        dotScales[last].snapTo(0.7f)
-        dotScales[last].animateTo(
-            1.28f,
-            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
-        )
+        scope.launch {
+            dotScales[index].snapTo(0.7f)
+            dotScales[index].animateTo(
+                1.28f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+            )
+        }
     }
 
     fun nearestDot(offset: Offset): Int? {
@@ -187,92 +195,94 @@ fun PatternPad(onPatternComplete: (String) -> Unit) {
         }
     }
 
-    Surface(
-        shape = RoundedCornerShape(36.dp),
-        color = surfaceVariant.copy(alpha = 0.35f),
-        modifier = Modifier.size(280.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragStart = { offset ->
-                            selected = emptyList()
-                            dragPoint = offset
-                            nearestDot(offset)?.let { selected = listOf(it) }
-                        },
-                        onDrag = { change, _ ->
-                            dragPoint = change.position
-                            nearestDot(change.position)?.let { dot ->
-                                if (dot !in selected) selected += dot
-                            }
-                        },
-                        onDragEnd = {
-                            if (selected.isNotEmpty()) onPatternComplete(selected.joinToString(""))
-                            selected = emptyList()
-                            dragPoint = null
+    Box(
+        modifier = Modifier
+            .size(300.dp)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        selected = emptyList()
+                        dragPoint = offset
+                        nearestDot(offset)?.let {
+                            selected = listOf(it)
+                            pulse(it)
                         }
-                    )
-                }
-        ) {
-            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                    },
+                    onDrag = { change, _ ->
+                        dragPoint = change.position
+                        nearestDot(change.position)?.let { dot ->
+                            if (dot !in selected) {
+                                selected += dot
+                                pulse(dot)
+                            }
+                        }
+                    },
+                    onDragEnd = {
+                        if (selected.isNotEmpty()) onPatternComplete(selected.joinToString(""))
+                        selected = emptyList()
+                        dragPoint = null
+                    }
+                )
+            }
+    ) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            if (canvasSize != size || positions.size != dotCount) {
                 canvasSize = size
                 val cols = 3
                 val cellW = size.width / cols
                 val cellH = size.height / cols
-                val pts = (0 until dotCount).map { i ->
+                positions = (0 until dotCount).map { i ->
                     val row = i / cols
                     val col = i % cols
                     Offset(cellW * col + cellW / 2, cellH * row + cellH / 2)
                 }
-                positions = pts
+            }
+            val pts = positions
 
-                if (selected.size > 1) {
-                    val path = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(pts[selected[0]].x, pts[selected[0]].y)
-                        for (i in 1 until selected.size) {
-                            lineTo(pts[selected[i]].x, pts[selected[i]].y)
-                        }
-                        dragPoint?.let { lineTo(it.x, it.y) }
+            if (selected.size > 1) {
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(pts[selected[0]].x, pts[selected[0]].y)
+                    for (i in 1 until selected.size) {
+                        lineTo(pts[selected[i]].x, pts[selected[i]].y)
                     }
-                    drawPath(
-                        path = path,
-                        color = primaryColor.copy(alpha = 0.9f),
-                        style = Stroke(width = 14f, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
-                    )
-                } else if (selected.size == 1 && dragPoint != null) {
-                    drawLine(
-                        color = primaryColor.copy(alpha = 0.5f),
-                        start = pts[selected[0]],
-                        end = dragPoint!!,
-                        strokeWidth = 10f,
-                        cap = StrokeCap.Round
-                    )
+                    dragPoint?.let { lineTo(it.x, it.y) }
                 }
+                drawPath(
+                    path = path,
+                    color = primaryColor,
+                    style = Stroke(width = 12f, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+                )
+            } else if (selected.size == 1 && dragPoint != null) {
+                drawLine(
+                    color = primaryColor.copy(alpha = 0.5f),
+                    start = pts[selected[0]],
+                    end = dragPoint!!,
+                    strokeWidth = 12f,
+                    cap = StrokeCap.Round
+                )
+            }
 
-                pts.forEachIndexed { index, pt ->
-                    val isSelected = index in selected
-                    val nodeScale = dotScales.getOrNull(index)?.value ?: 1f
+            pts.forEachIndexed { index, pt ->
+                val isSelected = index in selected
+                val nodeScale = dotScales.getOrNull(index)?.value ?: 1f
 
+                if (isSelected) {
                     drawCircle(
-                        color = if (isSelected) containerColor else surfaceVariant.copy(alpha = 0.6f),
-                        radius = 26f * nodeScale,
+                        color = primaryColor.copy(alpha = 0.2f),
+                        radius = 30f * nodeScale,
                         center = pt
                     )
                     drawCircle(
-                        color = if (isSelected) primaryColor else outline.copy(alpha = 0.35f),
-                        radius = 9f * nodeScale,
+                        color = primaryColor,
+                        radius = 12f * nodeScale,
                         center = pt
                     )
-                    if (isSelected) {
-                        drawCircle(
-                            color = primaryColor.copy(alpha = 0.18f),
-                            radius = 34f * nodeScale,
-                            center = pt
-                        )
-                    }
+                } else {
+                    drawCircle(
+                        color = outline.copy(alpha = 0.4f),
+                        radius = 12f,
+                        center = pt
+                    )
                 }
             }
         }

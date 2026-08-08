@@ -12,8 +12,8 @@ android {
         applicationId = "com.rynekryz.rynotes"
         minSdk = 31
         targetSdk = 36
-        versionCode = 10
-        versionName = "0.1.0-beta"
+        versionCode = 11
+        versionName = "0.1.1-beta"
     }
     buildFeatures {
         compose = true
@@ -72,7 +72,7 @@ dependencies {
     implementation("com.google.android.material:material:1.14.0")
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.biometric:biometric:1.1.0")
-    implementation("androidx.fragment:fragment-ktx:1.8.5")
+    implementation("androidx.fragment:fragment-ktx:1.8.9")
     implementation(platform("androidx.compose:compose-bom:2026.06.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")

@@ -10,10 +10,6 @@ import java.util.zip.ZipOutputStream
 
 private const val BACKUP_ENTRY_NAME = "rynotes_backup.json"
 
-/**
- * Writes/reads a single-entry zip backup at a SAF content:// URI.
- * Kept as a plain object (not part of NoteViewModel) since it only does file I/O, no state.
- */
 object BackupManager {
 
     fun writeBackupZip(context: Context, uri: Uri, json: String) {

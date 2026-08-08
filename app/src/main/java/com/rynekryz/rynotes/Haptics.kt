@@ -5,12 +5,22 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 
-private fun Context.vibratorOrNull(): Vibrator? = runCatching {
-    (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
-}.getOrNull()
+private var cachedVibrator: Vibrator? = null
+private var vibratorFetched = false
+
+private fun Context.vibratorOrNull(): Vibrator? {
+    if (vibratorFetched) return cachedVibrator
+    vibratorFetched = true
+    cachedVibrator = runCatching {
+        (applicationContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+    }.getOrNull()
+    return cachedVibrator
+}
 
 private fun Vibrator.oneShot(durationMs: Long, amplitude: Int = VibrationEffect.DEFAULT_AMPLITUDE) {
     if (!hasVibrator()) return
@@ -32,12 +42,12 @@ class Haptics(
 ) {
     fun tick() {
         if (!enabled()) return
-        vibrator?.oneShot(8, 60)
+        vibrator?.oneShot(20, 90)
     }
 
     fun click() {
         if (!enabled()) return
-        vibrator?.oneShot(12, 120)
+        vibrator?.oneShot(25, 150)
     }
 
     fun confirm() {
@@ -54,11 +64,10 @@ class Haptics(
 @Composable
 fun rememberHaptics(enabled: Boolean): Haptics {
     val context = LocalContext.current
-    val enabledState = androidx.compose.runtime.rememberUpdatedState(enabled)
-    return remember(context) {
-        val vibrator = context.vibratorOrNull()
-        Haptics(vibrator) { enabledState.value }
+    val enabledState = rememberUpdatedState(enabled)
+    return remember {
+        Haptics(context.vibratorOrNull()) { enabledState.value }
     }
 }
 
-val LocalHapticsEnabled = androidx.compose.runtime.compositionLocalOf { true }
+val LocalHapticsEnabled = compositionLocalOf { true }

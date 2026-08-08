@@ -305,12 +305,6 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * Builds a full JSON snapshot of everything DataStore holds: notes, folders,
-     * appearance/text settings, and lock configuration (hashes + types, not raw secrets).
-     * Restoring this snapshot reproduces the exact same state, including PINs/passwords,
-     * without ever storing the plaintext secret.
-     */
     suspend fun exportBackupJson(): String {
         val prefs = getApplication<Application>().dataStore.data.first()
         val root = JSONObject()
@@ -343,10 +337,6 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
         data class Failure(val message: String) : RestoreResult()
     }
 
-    /**
-     * Replaces everything in DataStore with the contents of a previously exported backup,
-     * then reloads in-memory state to match. This is destructive to current data by design.
-     */
     suspend fun restoreFromBackupJson(json: String): RestoreResult {
         return try {
             val root = JSONObject(json)
@@ -379,7 +369,6 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
                 p[VAULT_BIOMETRIC_KEY] = false
             }
 
-            // Reload in-memory state from what we just wrote so the UI reflects the restore immediately.
             val prefs = getApplication<Application>().dataStore.data.first()
             darkModeEnabled = prefs[DARK_MODE_KEY] ?: true
             pureDarkMode = prefs[PURE_DARK_KEY] ?: false
