@@ -139,7 +139,6 @@ private fun RyNotesApp(
             }
             pop()
         } catch (_: Exception) {
-            // gesture cancelled
         } finally {
             predictiveProgress = 0f
             isPredictiveBack = false
