@@ -12,13 +12,7 @@ gradle-app.setting
 
 # Local configuration
 local.properties
-.idea/caches
-.idea/libraries
-.idea/modules.xml
-.idea/workspace.xml
-.idea/navEditor.xml
-.idea/assetWizardSettings.xml
-.idea/deploymentTargetDropDown.xml
+.idea/
 
 # Log files
 *.log

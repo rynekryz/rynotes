@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -13,14 +14,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Balance
+import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Vibration
@@ -137,14 +142,14 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            MediumTopAppBar(
                 title = { Text("Settings", fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = { topHaptics.click(); onBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -159,123 +164,181 @@ fun SettingsScreen(
         ) {
             SettingsGroupLabel("Appearance")
             SettingsGroup {
-                SettingsSwitchRow(
+                SettingsItem(
                     icon = Icons.Filled.DarkMode,
                     title = "Dark mode",
                     subtitle = "Use a dark theme across the app",
-                    checked = viewModel.darkModeEnabled,
-                    onCheckedChange = viewModel::updateDarkMode
+                    roundingType = RoundingType.TOP,
+                    trailingContent = {
+                        Switch(
+                            checked = viewModel.darkModeEnabled,
+                            onCheckedChange = viewModel::updateDarkMode
+                        )
+                    },
+                    onClick = { viewModel.updateDarkMode(!viewModel.darkModeEnabled) }
                 )
                 if (viewModel.darkModeEnabled) {
-                    SettingsDivider()
-                    SettingsSwitchRow(
+                    SettingsItem(
                         icon = Icons.Filled.Contrast,
                         title = "Pure dark mode",
                         subtitle = "Use pure black for AMOLED screens",
-                        checked = viewModel.pureDarkMode,
-                        onCheckedChange = viewModel::updatePureDark
+                        roundingType = RoundingType.MIDDLE,
+                        trailingContent = {
+                            Switch(
+                                checked = viewModel.pureDarkMode,
+                                onCheckedChange = viewModel::updatePureDark
+                            )
+                        },
+                        onClick = { viewModel.updatePureDark(!viewModel.pureDarkMode) }
                     )
                 }
-                SettingsDivider()
-                SettingsSwitchRow(
-                    icon = Icons.Filled.Contrast,
+                SettingsItem(
+                    icon = Icons.Filled.Brightness6,
                     title = "Dynamic color",
                     subtitle = "Match colors to your wallpaper",
-                    checked = viewModel.dynamicColorEnabled,
-                    onCheckedChange = viewModel::updateDynamicColor
+                    roundingType = RoundingType.BOTTOM,
+                    trailingContent = {
+                        Switch(
+                            checked = viewModel.dynamicColorEnabled,
+                            onCheckedChange = viewModel::updateDynamicColor
+                        )
+                    },
+                    onClick = { viewModel.updateDynamicColor(!viewModel.dynamicColorEnabled) }
                 )
             }
 
             SettingsGroupLabel("Text")
             SettingsGroup {
-                SettingsSwitchRow(
+                SettingsItem(
                     icon = Icons.Filled.Vibration,
                     title = "Haptic feedback",
                     subtitle = "Vibrate on taps and actions",
-                    checked = viewModel.hapticsEnabled,
-                    onCheckedChange = viewModel::updateHaptics
+                    roundingType = RoundingType.TOP,
+                    trailingContent = {
+                        Switch(
+                            checked = viewModel.hapticsEnabled,
+                            onCheckedChange = viewModel::updateHaptics
+                        )
+                    },
+                    onClick = { viewModel.updateHaptics(!viewModel.hapticsEnabled) }
                 )
-                SettingsDivider()
-                SettingsSwitchRow(
+                SettingsItem(
                     icon = Icons.Filled.TextFields,
                     title = "Use system font",
                     subtitle = if (viewModel.useSystemFont) "Using your device's default font" else "Using Google Sans Flex",
-                    checked = viewModel.useSystemFont,
-                    onCheckedChange = viewModel::updateUseSystemFont
+                    roundingType = RoundingType.MIDDLE,
+                    trailingContent = {
+                        Switch(
+                            checked = viewModel.useSystemFont,
+                            onCheckedChange = viewModel::updateUseSystemFont
+                        )
+                    },
+                    onClick = { viewModel.updateUseSystemFont(!viewModel.useSystemFont) }
                 )
-                SettingsDivider()
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(14.dp))
-                        Column {
-                            Text("Font size", fontWeight = FontWeight.SemiBold)
-                            Text(
-                                "${(viewModel.fontScale * 100).toInt()}%",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                Surface(
+                    shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(14.dp))
+                            Column {
+                                Text("Font size", fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "${(viewModel.fontScale * 100).toInt()}%",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
+                        Spacer(Modifier.height(8.dp))
+                        Slider(
+                            value = viewModel.fontScale,
+                            onValueChange = viewModel::updateFontScale,
+                            valueRange = 0.8f..1.4f,
+                            steps = 5
+                        )
+                        Text(
+                            "The quick brown fox jumps",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize * viewModel.fontScale
+                            ),
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Slider(
-                        value = viewModel.fontScale,
-                        onValueChange = viewModel::updateFontScale,
-                        valueRange = 0.8f..1.4f,
-                        steps = 5
-                    )
-                    Text(
-                        "The quick brown fox jumps",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = MaterialTheme.typography.bodyLarge.fontSize * viewModel.fontScale
-                        ),
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
                 }
             }
 
             SettingsGroupLabel("Security")
             SettingsGroup {
-                SettingsSwitchRow(
-                    icon = Icons.Filled.Lock,
+                SettingsItem(
+                    icon = if (viewModel.hasAppLock) Icons.Filled.Lock else Icons.Filled.LockOpen,
                     title = "App lock",
                     subtitle = if (viewModel.hasAppLock) "Locked with ${viewModel.appLockType.name.lowercase()}" else "Require a PIN, pattern, or password to open the app",
-                    checked = viewModel.hasAppLock,
-                    onCheckedChange = { enabled ->
-                        if (enabled) {
-                            showAppLockSetup = true
-                        } else {
+                    roundingType = if (viewModel.hasAppLock) RoundingType.TOP else RoundingType.SINGLE,
+                    trailingContent = {
+                        Switch(
+                            checked = viewModel.hasAppLock,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    showAppLockSetup = true
+                                } else {
+                                    requireVerification(DisableTarget.APP_LOCK) { showDisableLockConfirm = DisableTarget.APP_LOCK }
+                                }
+                            }
+                        )
+                    },
+                    onClick = {
+                        if (viewModel.hasAppLock) {
                             requireVerification(DisableTarget.APP_LOCK) { showDisableLockConfirm = DisableTarget.APP_LOCK }
+                        } else {
+                            showAppLockSetup = true
                         }
                     }
                 )
                 if (viewModel.hasAppLock) {
-                    SettingsDivider()
-                    SettingsClickRow(
+                    SettingsItem(
                         icon = Icons.Filled.Lock,
                         title = "Change app lock",
                         subtitle = "Update your PIN, pattern, or password",
+                        roundingType = if (biometricAvailable) RoundingType.MIDDLE else RoundingType.BOTTOM,
                         onClick = { requireVerification(DisableTarget.APP_LOCK) { showAppLockSetup = true } }
                     )
+                    if (biometricAvailable) {
+                        SettingsItem(
+                            icon = Icons.Filled.Fingerprint,
+                            title = "Unlock app with fingerprint",
+                            subtitle = "Use your device's fingerprint sensor instead",
+                            roundingType = RoundingType.BOTTOM,
+                            trailingContent = {
+                                Switch(
+                                    checked = viewModel.appLockBiometricEnabled,
+                                    onCheckedChange = { enabled ->
+                                        if (enabled) viewModel.updateAppLockBiometricEnabled(true)
+                                        else requireVerification(DisableTarget.APP_LOCK) { viewModel.updateAppLockBiometricEnabled(false) }
+                                    }
+                                )
+                            },
+                            onClick = {
+                                if (viewModel.appLockBiometricEnabled) {
+                                    requireVerification(DisableTarget.APP_LOCK) { viewModel.updateAppLockBiometricEnabled(false) }
+                                } else {
+                                    viewModel.updateAppLockBiometricEnabled(true)
+                                }
+                            }
+                        )
+                    }
                 }
-                if (viewModel.hasAppLock && biometricAvailable) {
-                    SettingsDivider()
-                    SettingsSwitchRow(
-                        icon = Icons.Filled.Fingerprint,
-                        title = "Unlock app with fingerprint",
-                        subtitle = "Use your device's fingerprint sensor instead",
-                        checked = viewModel.appLockBiometricEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled) viewModel.updateAppLockBiometricEnabled(true)
-                            else requireVerification(DisableTarget.APP_LOCK) { viewModel.updateAppLockBiometricEnabled(false) }
-                        }
-                    )
-                }
-                SettingsDivider()
-                SettingsClickRow(
+
+                Spacer(Modifier.height(12.dp))
+
+                SettingsItem(
                     icon = Icons.Filled.Shield,
                     title = "Vault password",
                     subtitle = if (viewModel.vaultConfigured) "Change or remove vault protection" else "Set up a password to lock individual notes",
+                    roundingType = if (viewModel.vaultConfigured && biometricAvailable) RoundingType.TOP else RoundingType.SINGLE,
                     onClick = {
                         if (viewModel.vaultConfigured) {
                             requireVerification(DisableTarget.VAULT) { showVaultSetup = true }
@@ -285,15 +348,26 @@ fun SettingsScreen(
                     }
                 )
                 if (viewModel.vaultConfigured && biometricAvailable) {
-                    SettingsDivider()
-                    SettingsSwitchRow(
+                    SettingsItem(
                         icon = Icons.Filled.Fingerprint,
                         title = "Unlock vault with fingerprint",
                         subtitle = "Use your device's fingerprint sensor instead",
-                        checked = viewModel.vaultBiometricEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled) viewModel.updateVaultBiometricEnabled(true)
-                            else requireVerification(DisableTarget.VAULT) { viewModel.updateVaultBiometricEnabled(false) }
+                        roundingType = RoundingType.BOTTOM,
+                        trailingContent = {
+                            Switch(
+                                checked = viewModel.vaultBiometricEnabled,
+                                onCheckedChange = { enabled ->
+                                    if (enabled) viewModel.updateVaultBiometricEnabled(true)
+                                    else requireVerification(DisableTarget.VAULT) { viewModel.updateVaultBiometricEnabled(false) }
+                                }
+                            )
+                        },
+                        onClick = {
+                            if (viewModel.vaultBiometricEnabled) {
+                                requireVerification(DisableTarget.VAULT) { viewModel.updateVaultBiometricEnabled(false) }
+                            } else {
+                                viewModel.updateVaultBiometricEnabled(true)
+                            }
                         }
                     )
                 }
@@ -301,17 +375,18 @@ fun SettingsScreen(
 
             SettingsGroupLabel("Data")
             SettingsGroup {
-                SettingsClickRow(
+                SettingsItem(
                     icon = Icons.Filled.CloudUpload,
                     title = "Backup",
                     subtitle = "Save all notes, folders, and settings to a .zip file",
+                    roundingType = RoundingType.TOP,
                     onClick = { if (!isWorkingOnBackup) createBackupLauncher.launch(BackupManager.defaultFileName()) }
                 )
-                SettingsDivider()
-                SettingsClickRow(
+                SettingsItem(
                     icon = Icons.Filled.CloudDownload,
                     title = "Restore",
                     subtitle = "Replace current data with a backup .zip file",
+                    roundingType = RoundingType.BOTTOM,
                     onClick = { if (!isWorkingOnBackup) restorePickerLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }
                 )
             }
@@ -319,27 +394,26 @@ fun SettingsScreen(
             SettingsGroupLabel("About")
             SettingsGroup {
                 val aboutHaptics = rememberHaptics(viewModel.hapticsEnabled)
-                Surface(onClick = { aboutHaptics.click(); openUrl("https://github.com/rynekryz") }, color = Color.Transparent) {
-                    ListItem(
-                        headlineContent = { Text("RyNotes", fontWeight = FontWeight.Bold) },
-                        supportingContent = { Text("v$versionName ($versionCode) · $buildTypeLabel · by Ryne") },
-                        leadingContent = { Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                    )
-                }
-                SettingsDivider()
-                SettingsClickRow(
+                SettingsItem(
+                    icon = Icons.Filled.Favorite,
+                    title = "RyNotes",
+                    subtitle = "v$versionName ($versionCode) · $buildTypeLabel · by Ryne",
+                    roundingType = RoundingType.TOP,
+                    onClick = { aboutHaptics.click(); openUrl("https://github.com/rynekryz") }
+                )
+                SettingsItem(
                     icon = Icons.Filled.Info,
                     title = "Credits",
                     subtitle = "Open source libraries and design credits",
+                    roundingType = RoundingType.MIDDLE,
                     onClick = { showCredits = true }
                 )
-                SettingsDivider()
-                ListItem(
-                    headlineContent = { Text("License", fontWeight = FontWeight.SemiBold) },
-                    supportingContent = { Text("GNU General Public License v3.0 (GPLv3)\nFree, Open source software. You may use, study, share and improve this software.") },
-                    leadingContent = { Icon(Icons.Filled.Balance, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                SettingsItem(
+                    icon = Icons.Filled.Balance,
+                    title = "License",
+                    subtitle = "GNU General Public License v3.0 (GPLv3)\nFree, Open source software. You may use, study, share and improve this software.",
+                    roundingType = RoundingType.BOTTOM,
+                    onClick = { openUrl("https://github.com/rynekryz/rynotes?tab=GPL-3.0-1-ov-file") }
                 )
             }
 
@@ -566,81 +640,57 @@ private fun VerifySecretDialog(
 private fun SettingsGroupLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(start = 4.dp, top = 20.dp, bottom = 10.dp)
+        modifier = Modifier.padding(start = 8.dp, top = 24.dp, bottom = 12.dp)
     )
 }
+
+private enum class RoundingType { TOP, MIDDLE, BOTTOM, SINGLE }
 
 @Composable
 private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    ) {
-        Column(content = content)
-    }
-}
-
-@Composable
-private fun SettingsDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        content = content
     )
 }
 
 @Composable
-private fun SettingsSwitchRow(
+private fun SettingsItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    roundingType: RoundingType = RoundingType.SINGLE,
+    onClick: () -> Unit = {},
+    trailingContent: @Composable (() -> Unit)? = null
 ) {
     val haptics = rememberHaptics(LocalHapticsEnabled.current)
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.width(14.dp))
-            Column {
-                Text(title, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = {
-            haptics.click()
-            onCheckedChange(it)
-        })
+    val shape = when (roundingType) {
+        RoundingType.TOP -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+        RoundingType.BOTTOM -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+        RoundingType.MIDDLE -> RoundedCornerShape(4.dp)
+        RoundingType.SINGLE -> RoundedCornerShape(24.dp)
     }
-}
-
-@Composable
-private fun SettingsClickRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    val haptics = rememberHaptics(LocalHapticsEnabled.current)
-    Surface(onClick = { haptics.click(); onClick() }, color = Color.Transparent) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
+    Surface(
+        onClick = {
+            haptics.click()
+            onClick()
+        },
+        shape = shape,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        ListItem(
+            headlineContent = { Text(title, fontWeight = FontWeight.SemiBold) },
+            supportingContent = { Text(subtitle, style = MaterialTheme.typography.bodySmall) },
+            leadingContent = {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            },
+            trailingContent = trailingContent,
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        )
     }
 }
 
@@ -683,9 +733,9 @@ private data class CreditEntry(
 
 private val credits = listOf(
     CreditEntry(Icons.Filled.Info, "Material Design Icons", "by Google · Apache License 2.0", "https://fonts.google.com/icons"),
-    CreditEntry(Icons.Filled.Info, "Material You Expressive", "by Google", "https://m3.material.io/blog/building-with-m3-expressive"),
-    CreditEntry(Icons.Filled.Info, "Jetpack DataStore", "by Google · Apache License 2.0", "https://developer.android.com/topic/libraries/architecture/datastore"),
-    CreditEntry(Icons.Filled.Info, "Kotlin", "by JetBrains · Apache License 2.0", "https://kotlinlang.org")
+    CreditEntry(Icons.Filled.Contrast, "Material You Expressive", "by Google", "https://m3.material.io/blog/building-with-m3-expressive"),
+    CreditEntry(Icons.Filled.PrivacyTip, "Jetpack DataStore", "by Google · Apache License 2.0", "https://developer.android.com/topic/libraries/architecture/datastore"),
+    CreditEntry(Icons.Filled.Balance, "Kotlin", "by JetBrains · Apache License 2.0", "https://kotlinlang.org")
 )
 
 @Composable
@@ -697,7 +747,6 @@ private fun CreditsDialog(onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 credits.forEachIndexed { index, entry ->
-                    if (index > 0) SettingsDivider()
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically

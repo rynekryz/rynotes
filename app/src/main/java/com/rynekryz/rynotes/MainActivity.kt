@@ -14,9 +14,11 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +44,7 @@ private sealed class Screen {
     data class Pdf(val uri: String) : Screen()
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 class MainActivity : FragmentActivity() {
     private val vm: NoteViewModel by viewModels()
     private var pendingPdfUri by mutableStateOf<Uri?>(value = null)
@@ -65,7 +68,7 @@ class MainActivity : FragmentActivity() {
                     ) {
                         if (vm.isLoading) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
+                                LoadingIndicator()
                             }
                         } else {
                             androidx.compose.animation.Crossfade(
@@ -139,6 +142,7 @@ private fun RyNotesApp(
             }
             pop()
         } catch (_: Exception) {
+            // gesture cancelled
         } finally {
             predictiveProgress = 0f
             isPredictiveBack = false
