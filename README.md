@@ -1,7 +1,7 @@
 <div align="center">
 <img src="icon.png" width="160" height="160" style="display: block; margin: 0 auto"/>
 <h1>RyNotes</h1>
-<p>A modern, lightweight, and secure notes application for Android. Built with **Jetpack Compose** and **Material 3 Expressive**</p>
+<p>A modern, lightweight, and secure notes application for Android. Built with Jetpack Compose and Material 3 Expressive</p>
 <p>Offers a beautiful, fluid user experience while prioritizing your privacy and organization.</p>
 </div>
 
