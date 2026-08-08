@@ -17,7 +17,7 @@ android {
     }
     buildFeatures {
         compose = true
-    	  buildConfig = true
+        buildConfig = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
@@ -50,9 +50,9 @@ android {
         }
     }
 }
-
 androidComponents {
     onVariants { variant ->
+        val versionName = variant.outputs.first().versionName.get()
         variant.outputs.forEach { output ->
             val abiFilter = output.filters.find {
                 it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
@@ -64,11 +64,10 @@ androidComponents {
                 else -> abiFilter ?: "universal"
             }
             val buildTypeName = variant.buildType ?: "debug"
-            output.outputFileName.set("rynotes-0.0.1-alpha-$abiName-$buildTypeName.apk")
+            output.outputFileName.set("rynotes-$versionName-$abiName-$buildTypeName.apk")
         }
     }
 }
-
 dependencies {
     implementation("com.google.android.material:material:1.14.0")
     implementation("androidx.activity:activity-compose:1.13.0")
