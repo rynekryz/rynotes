@@ -1,9 +1,9 @@
-# RyNotes
-
-**RyNotes** is a modern, lightweight, and secure notes application for Android. Built with **Jetpack Compose** and **Material 3 Expressive**, it offers a beautiful, fluid user experience while prioritizing your privacy and organization.
-
-[![Release](https://img.shields.io/github/v/release/rynekryz/rynotes?include_prereleases&label=release)](https://github.com/rynekryz/rynotes/releases)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+<div align="center">
+<img src="icon.png" width="160" height="160" style="display: block; margin: 0 auto"/>
+<h1>RyNotes</h1>
+<p>A modern, lightweight, and secure notes application for Android. Built with **Jetpack Compose** and **Material 3 Expressive**</p>
+<p>Offers a beautiful, fluid user experience while prioritizing your privacy and organization.</p>
+</div>
 
 > **Status:** Early alpha. Expect bugs and breaking changes between versions. See [Releases](https://github.com/rynekryz/rynotes/releases) for the latest APK.
 
@@ -60,7 +60,7 @@ Grab the latest APK from the [Releases page](https://github.com/rynekryz/rynotes
 | `x86_64` | Emulators / x86 devices |
 | `universal` | Works on any device, larger file size |
 
-> Alpha builds are **debug builds**, not signed for production release yet.
+> Alpha/Beta builds are **debug builds**, not signed for production release yet.
 
 ---
 
@@ -113,3 +113,11 @@ Distributed under the GNU General Public License v3.0 (GPLv3). See [LICENSE](LIC
 ## Contributing
 
 Contributions are welcome! Feel free to open [issues](https://github.com/rynekryz/rynotes/issues) or submit pull requests.
+
+<div align="center">
+<strong>Made with ♥︎ by Ryne</strong>
+</div>
+<div align="center">
+  <a href="DISCORD_INVITE"><img src="https://img.shields.io/badge/Discord-5A5A5A?style=for-the-badge&logo=discord&logoColor=white"/></a>
+  <a href="https://tiktok.com/@rynekryz"><img src="https://img.shields.io/badge/TikTok-5A5A5A?style=for-the-badge&logo=tiktok&logoColor=white"/></a>
+</div>
