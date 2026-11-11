@@ -7,12 +7,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Balance
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.CloudDownload
@@ -22,10 +20,8 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Vibration
@@ -48,6 +44,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     viewModel: NoteViewModel,
+    onNavigateToLicenses: () -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -56,7 +53,6 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val topHaptics = rememberHaptics(viewModel.hapticsEnabled)
     val snackbarHostState = remember { SnackbarHostState() }
-    var showCredits by remember { mutableStateOf(value = false) }
     var showAppLockSetup by remember { mutableStateOf(value = false) }
     var showVaultSetup by remember { mutableStateOf(value = false) }
     var showDisableLockConfirm by remember { mutableStateOf<DisableTarget?>(value = null) }
@@ -399,11 +395,14 @@ fun SettingsScreen(
                         trailingContent = {
                             Switch(
                                 checked = viewModel.vaultBiometricEnabled,
-                                onCheckedChange = { enabled ->
-                                    topHaptics.click()
-                                    if (enabled) viewModel.updateVaultBiometricEnabled(true)
-                                    else requireVerification(DisableTarget.VAULT) { viewModel.updateVaultBiometricEnabled(false) }
+                            onCheckedChange = { enabled ->
+                                topHaptics.click()
+                                if (enabled) {
+                                    requireVerification(DisableTarget.VAULT) { viewModel.updateVaultBiometricEnabled(true, verifiedSecret) }
+                                } else {
+                                    requireVerification(DisableTarget.VAULT) { viewModel.updateVaultBiometricEnabled(false) }
                                 }
+                            }
                             )
                         },
                         onClick = {
@@ -447,27 +446,16 @@ fun SettingsScreen(
                     onClick = { aboutHaptics.click(); openUrl("https://github.com/rynekryz") }
                 )
                 SettingsItem(
-                    icon = Icons.Filled.Info,
-                    title = "Credits",
-                    subtitle = "Open source libraries and design credits",
-                    roundingType = RoundingType.MIDDLE,
-                    onClick = { showCredits = true }
-                )
-                SettingsItem(
                     icon = Icons.Filled.Balance,
-                    title = "License",
-                    subtitle = "GNU General Public License v3.0 (GPLv3)\nFree, Open source software. You may use, study, share and improve this software.",
+                    title = "Open source licenses",
+                    subtitle = "GNU GPL v3.0 and licenses of the libraries used",
                     roundingType = RoundingType.BOTTOM,
-                    onClick = { openUrl("https://github.com/rynekryz/rynotes?tab=GPL-3.0-1-ov-file") }
+                    onClick = onNavigateToLicenses
                 )
             }
 
             Spacer(Modifier.height(24.dp))
         }
-    }
-
-    if (showCredits) {
-        CreditsDialog(onDismiss = { showCredits = false }, onOpenUrl = ::openUrl)
     }
 
     if (showAppLockSetup) {
@@ -566,7 +554,7 @@ fun SettingsScreen(
                 val ok = if (pending.target == DisableTarget.APP_LOCK) {
                     viewModel.verifyAppLockSecret(secret)
                 } else {
-                    viewModel.tryUnlockVault(secret)
+                    viewModel.verifyVaultSecret(secret)
                 }
                 if (ok) {
                     verifiedSecret = secret
@@ -767,56 +755,6 @@ private fun <T> SingleChoiceSegmented(
             }
         }
     }
-}
-
-private data class CreditEntry(
-    val icon: ImageVector,
-    val title: String,
-    val subtitle: String,
-    val url: String
-)
-
-private val credits = listOf(
-    CreditEntry(Icons.Filled.Info, "Material Design Icons", "by Google · Apache License 2.0", "https://fonts.google.com/icons"),
-    CreditEntry(Icons.Filled.Contrast, "Material You Expressive", "by Google", "https://m3.material.io/blog/building-with-m3-expressive"),
-    CreditEntry(Icons.Filled.PrivacyTip, "Jetpack DataStore", "by Google · Apache License 2.0", "https://developer.android.com/topic/libraries/architecture/datastore"),
-    CreditEntry(Icons.Filled.Balance, "Kotlin", "by JetBrains · Apache License 2.0", "https://kotlinlang.org")
-)
-
-@Composable
-private fun CreditsDialog(onDismiss: () -> Unit, onOpenUrl: (String) -> Unit) {
-    val haptics = rememberHaptics(LocalHapticsEnabled.current)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Credits") },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                credits.forEachIndexed { index, entry ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(32.dp)) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(entry.icon, contentDescription = null, modifier = Modifier.size(16.dp))
-                            }
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(entry.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text(entry.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        IconButton(onClick = { haptics.click(); onOpenUrl(entry.url) }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open link", modifier = Modifier.size(16.dp))
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
-        }
-    )
 }
 
 @Composable

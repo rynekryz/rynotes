@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import android.util.Base64
 import java.security.MessageDigest
+import javax.crypto.SecretKey
 
 private val Application.dataStore by preferencesDataStore(name = "rynotes_store")
 
@@ -33,6 +35,8 @@ private val APP_LOCK_TYPE_KEY = stringPreferencesKey("app_lock_type")
 private val APP_LOCK_HASH_KEY = stringPreferencesKey("app_lock_hash")
 private val VAULT_HASH_KEY = stringPreferencesKey("vault_hash")
 private val VAULT_TYPE_KEY = stringPreferencesKey("vault_type")
+private val VAULT_SALT_KEY = stringPreferencesKey("vault_salt")
+private val VAULT_WRAPPED_KEY = stringPreferencesKey("vault_wrapped_key")
 private val APP_LOCK_BIOMETRIC_KEY = booleanPreferencesKey("app_lock_biometric_enabled")
 private val VAULT_BIOMETRIC_KEY = booleanPreferencesKey("vault_biometric_enabled")
 
@@ -88,6 +92,13 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     var vaultType by mutableStateOf(LockType.PIN)
         private set
 
+    private var vaultSalt: ByteArray? = null
+    private var vaultWrappedKey: String? = null
+    private var vaultSessionKey: SecretKey? = null
+
+    var vaultUnlocked by mutableStateOf(value = false)
+        private set
+
     var appUnlocked by mutableStateOf(value = false)
 
     var appLockBiometricEnabled by mutableStateOf(value = false)
@@ -113,8 +124,10 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
             appLockHash = prefs[APP_LOCK_HASH_KEY]
             vaultHash = prefs[VAULT_HASH_KEY]
             vaultType = runCatching { LockType.valueOf(prefs[VAULT_TYPE_KEY] ?: LockType.PIN.name) }.getOrDefault(LockType.PIN)
+            vaultSalt = prefs[VAULT_SALT_KEY]?.let { runCatching { Base64.decode(it, Base64.NO_WRAP) }.getOrNull() }
+            vaultWrappedKey = prefs[VAULT_WRAPPED_KEY]
             appLockBiometricEnabled = (prefs[APP_LOCK_BIOMETRIC_KEY] ?: false) && hasAppLock
-            vaultBiometricEnabled = (prefs[VAULT_BIOMETRIC_KEY] ?: false) && vaultHash != null
+            vaultBiometricEnabled = (prefs[VAULT_BIOMETRIC_KEY] ?: false) && vaultHash != null && vaultWrappedKey != null
             appUnlocked = !hasAppLock
             notes.value = purgeExpiredTrash(loadNotes())
             folders.value = loadFolders()
@@ -241,6 +254,7 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     fun setVaultSecret(type: LockType, secret: String) {
         vaultType = type
         vaultHash = hashSecret(secret)
+        ensureVaultKey(secret)
         viewModelScope.launch {
             getApplication<Application>().dataStore.edit { prefs ->
                 prefs[VAULT_TYPE_KEY] = type.name
@@ -251,64 +265,194 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
 
     fun changeVaultSecret(currentSecret: String, newType: LockType, newSecret: String): Boolean {
         if (vaultConfigured && hashSecret(currentSecret) != vaultHash) return false
-        return changeVaultSecretInternal(newType, newSecret)
+        val oldKey = ensureVaultKey(currentSecret) ?: return false
+        return changeVaultSecretInternal(oldKey, newType, newSecret)
     }
 
     fun changeVaultSecretWithBiometrics(newType: LockType, newSecret: String): Boolean {
         if (!vaultConfigured || !vaultBiometricEnabled) return false
-        return changeVaultSecretInternal(newType, newSecret)
+        val oldKey = unwrapStoredVaultKey() ?: return false
+        return changeVaultSecretInternal(oldKey, newType, newSecret)
     }
 
-    private fun changeVaultSecretInternal(newType: LockType, newSecret: String): Boolean {
+    private fun changeVaultSecretInternal(oldKey: SecretKey, newType: LockType, newSecret: String): Boolean {
+        val salt = vaultSalt ?: VaultCrypto.newSalt().also {
+            vaultSalt = it
+            persistVaultSalt(it)
+        }
+        val newKey = VaultCrypto.deriveKey(newSecret, salt)
+        notes.value = notes.value.map { note ->
+            if (note.locked) {
+                val plain = if (note.encrypted) VaultCrypto.decrypt(note.text, oldKey) ?: note.text else note.text
+                note.copy(text = VaultCrypto.encrypt(plain, newKey), encrypted = true)
+            } else note
+        }
+        vaultSessionKey = newKey
         vaultType = newType
         vaultHash = hashSecret(newSecret)
+        rewrapVaultKey(newKey)
         viewModelScope.launch {
             getApplication<Application>().dataStore.edit { prefs ->
                 prefs[VAULT_TYPE_KEY] = newType.name
                 prefs[VAULT_HASH_KEY] = vaultHash!!
             }
+            saveNotes(notes.value)
         }
         return true
     }
 
     fun removeVault(currentSecret: String): Boolean {
         if (!vaultConfigured || hashSecret(currentSecret) != vaultHash) return false
-        return removeVaultInternal()
+        val key = ensureVaultKey(currentSecret) ?: return false
+        return removeVaultInternal(key)
     }
 
     fun removeVaultWithBiometrics(): Boolean {
         if (!vaultConfigured || !vaultBiometricEnabled) return false
-        return removeVaultInternal()
+        val key = unwrapStoredVaultKey() ?: return false
+        return removeVaultInternal(key)
     }
 
-    private fun removeVaultInternal(): Boolean {
+    private fun removeVaultInternal(key: SecretKey): Boolean {
+        updateAndPersist(
+            notes.value.map { note ->
+                if (note.locked) {
+                    val plain = if (note.encrypted) VaultCrypto.decrypt(note.text, key) ?: note.text else note.text
+                    note.copy(text = plain, locked = false, encrypted = false)
+                } else note
+            }
+        )
         vaultHash = null
+        vaultSalt = null
+        vaultWrappedKey = null
+        vaultSessionKey = null
+        vaultType = LockType.PIN
+        vaultUnlocked = false
         vaultBiometricEnabled = false
-        updateAndPersist(notes.value.map { if (it.locked) it.copy(locked = false) else it })
         viewModelScope.launch {
             getApplication<Application>().dataStore.edit { prefs ->
                 prefs.remove(VAULT_HASH_KEY)
+                prefs.remove(VAULT_SALT_KEY)
+                prefs.remove(VAULT_WRAPPED_KEY)
+                prefs[VAULT_TYPE_KEY] = LockType.PIN.name
                 prefs[VAULT_BIOMETRIC_KEY] = false
             }
         }
         return true
     }
 
-    fun tryUnlockVault(secret: String): Boolean = vaultHash != null && hashSecret(secret) == vaultHash
+    fun verifyVaultSecret(secret: String): Boolean = vaultConfigured && hashSecret(secret) == vaultHash
 
-    fun unlockVaultWithBiometrics(): Boolean = vaultConfigured
+    fun tryUnlockVault(secret: String): Boolean {
+        if (!vaultConfigured || hashSecret(secret) != vaultHash) return false
+        val key = ensureVaultKey(secret) ?: return false
+        decryptLockedNotes(key)
+        vaultUnlocked = true
+        return true
+    }
 
-    fun updateVaultBiometricEnabled(enabled: Boolean) {
-        vaultBiometricEnabled = enabled && vaultConfigured
+    fun unlockVaultWithBiometrics(): Boolean {
+        if (!vaultConfigured || !vaultBiometricEnabled) return false
+        val key = unwrapStoredVaultKey() ?: return false
+        decryptLockedNotes(key)
+        vaultUnlocked = true
+        return true
+    }
+
+    fun lockVault() {
+        val key = vaultSessionKey ?: return
+        notes.value = notes.value.map { note ->
+            if (note.locked && !note.encrypted) note.copy(text = VaultCrypto.encrypt(note.text, key), encrypted = true)
+            else note
+        }
+        vaultSessionKey = null
+        vaultUnlocked = false
+        viewModelScope.launch { saveNotes(notes.value) }
+    }
+
+    private fun ensureVaultKey(secret: String): SecretKey? {
+        val salt = vaultSalt ?: VaultCrypto.newSalt().also {
+            vaultSalt = it
+            persistVaultSalt(it)
+        }
+        val key = VaultCrypto.deriveKey(secret, salt)
+        vaultSessionKey = key
+        migrateLegacyLockedNotes(key)
+        return key
+    }
+
+    private fun unwrapStoredVaultKey(): SecretKey? {
+        val wrapped = vaultWrappedKey ?: return null
+        return VaultCrypto.unwrapKey(wrapped)?.also { vaultSessionKey = it }
+    }
+
+    private fun rewrapVaultKey(key: SecretKey) {
+        if (!vaultBiometricEnabled) return
+        runCatching { VaultCrypto.wrapKey(key) }.getOrNull()?.let { wrapped ->
+            vaultWrappedKey = wrapped
+            viewModelScope.launch {
+                getApplication<Application>().dataStore.edit { prefs -> prefs[VAULT_WRAPPED_KEY] = wrapped }
+            }
+        }
+    }
+
+    private fun persistVaultSalt(salt: ByteArray) {
         viewModelScope.launch {
-            getApplication<Application>().dataStore.edit { prefs -> prefs[VAULT_BIOMETRIC_KEY] = vaultBiometricEnabled }
+            getApplication<Application>().dataStore.edit { prefs ->
+                prefs[VAULT_SALT_KEY] = Base64.encodeToString(salt, Base64.NO_WRAP)
+            }
+        }
+    }
+
+    private fun migrateLegacyLockedNotes(key: SecretKey) {
+        val legacy = notes.value.filter { it.locked && !it.encrypted }
+        if (legacy.isEmpty()) return
+        updateAndPersist(
+            notes.value.map { note ->
+                if (note.locked && !note.encrypted) note.copy(text = VaultCrypto.encrypt(note.text, key), encrypted = true)
+                else note
+            }
+        )
+    }
+
+    private fun decryptLockedNotes(key: SecretKey) {
+        notes.value = notes.value.map { note ->
+            if (note.locked && note.encrypted) {
+                val plain = VaultCrypto.decrypt(note.text, key) ?: return@map note
+                note.copy(text = plain, encrypted = false)
+            } else note
+        }
+    }
+
+    fun updateVaultBiometricEnabled(enabled: Boolean, secret: String? = null) {
+        if (enabled) {
+            if (!vaultConfigured) return
+            val key = vaultSessionKey ?: secret?.let { ensureVaultKey(it) } ?: return
+            val wrapped = runCatching { VaultCrypto.wrapKey(key) }.getOrNull() ?: return
+            vaultWrappedKey = wrapped
+            vaultBiometricEnabled = true
+            viewModelScope.launch {
+                getApplication<Application>().dataStore.edit { prefs ->
+                    prefs[VAULT_BIOMETRIC_KEY] = true
+                    prefs[VAULT_WRAPPED_KEY] = wrapped
+                }
+            }
+        } else {
+            vaultBiometricEnabled = false
+            vaultWrappedKey = null
+            viewModelScope.launch {
+                getApplication<Application>().dataStore.edit { prefs ->
+                    prefs[VAULT_BIOMETRIC_KEY] = false
+                    prefs.remove(VAULT_WRAPPED_KEY)
+                }
+            }
         }
     }
 
     suspend fun exportBackupJson(): String {
         val prefs = getApplication<Application>().dataStore.data.first()
         val root = JSONObject()
-        root.put("backupVersion", 1)
+        root.put("backupVersion", 2)
         root.put("exportedAt", System.currentTimeMillis())
         root.put("notes", JSONArray(prefs[NOTES_KEY] ?: "[]"))
         root.put("folders", JSONArray(prefs[FOLDERS_KEY] ?: "[]"))
@@ -327,6 +471,7 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
         if (prefs[APP_LOCK_HASH_KEY] != null) lock.put("appLockHash", prefs[APP_LOCK_HASH_KEY])
         lock.put("vaultType", prefs[VAULT_TYPE_KEY] ?: LockType.PIN.name)
         if (prefs[VAULT_HASH_KEY] != null) lock.put("vaultHash", prefs[VAULT_HASH_KEY])
+        if (prefs[VAULT_SALT_KEY] != null) lock.put("vaultSalt", prefs[VAULT_SALT_KEY])
         root.put("lock", lock)
 
         return root.toString()
@@ -361,9 +506,12 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
                 if (lock.has("appLockHash")) p[APP_LOCK_HASH_KEY] = lock.getString("appLockHash")
                 else p.remove(APP_LOCK_HASH_KEY)
 
-                p[VAULT_TYPE_KEY] = lock.optString("vaultType", LockType.PIN.name)
-                if (lock.has("vaultHash")) p[VAULT_HASH_KEY] = lock.getString("vaultHash")
-                else p.remove(VAULT_HASH_KEY)
+            p[VAULT_TYPE_KEY] = lock.optString("vaultType", LockType.PIN.name)
+            if (lock.has("vaultHash")) p[VAULT_HASH_KEY] = lock.getString("vaultHash")
+            else p.remove(VAULT_HASH_KEY)
+            if (lock.has("vaultSalt")) p[VAULT_SALT_KEY] = lock.getString("vaultSalt")
+            else p.remove(VAULT_SALT_KEY)
+            p.remove(VAULT_WRAPPED_KEY)
 
                 p[APP_LOCK_BIOMETRIC_KEY] = false
                 p[VAULT_BIOMETRIC_KEY] = false
@@ -381,6 +529,10 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
             appLockHash = prefs[APP_LOCK_HASH_KEY]
             vaultHash = prefs[VAULT_HASH_KEY]
             vaultType = runCatching { LockType.valueOf(prefs[VAULT_TYPE_KEY] ?: LockType.PIN.name) }.getOrDefault(LockType.PIN)
+            vaultSalt = prefs[VAULT_SALT_KEY]?.let { runCatching { Base64.decode(it, Base64.NO_WRAP) }.getOrNull() }
+            vaultWrappedKey = null
+            vaultSessionKey = null
+            vaultUnlocked = false
             appLockBiometricEnabled = false
             vaultBiometricEnabled = false
             appUnlocked = !hasAppLock
@@ -398,6 +550,12 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
         folders.value = listOf(folder) + folders.value
         persistFolders()
         return folder.id
+    }
+
+    fun deleteFolder(id: String) {
+        folders.value = folders.value.filterNot { it.id == id }
+        updateAndPersist(notes.value.map { if (it.folderId == id) it.copy(folderId = null) else it })
+        persistFolders()
     }
 
     private fun persistFolders() {
@@ -534,7 +692,8 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
                     tags = tags,
                     trashedAt = if (obj.has("trashedAt") && !obj.isNull("trashedAt")) obj.getLong("trashedAt") else null,
                     archivedAt = if (obj.has("archivedAt") && !obj.isNull("archivedAt")) obj.getLong("archivedAt") else null,
-                    locked = obj.optBoolean("locked", false)
+                    locked = obj.optBoolean("locked", false),
+                    encrypted = obj.optBoolean("encrypted", false)
                 )
             }
         } catch (_: Exception) {
@@ -558,7 +717,25 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
             obj.put("tags", JSONArray(note.tags))
             if (note.trashedAt != null) obj.put("trashedAt", note.trashedAt)
             if (note.archivedAt != null) obj.put("archivedAt", note.archivedAt)
-            obj.put("locked", note.locked)
+            if (note.locked) {
+                if (note.encrypted) {
+                    obj.put("text", note.text)
+                    obj.put("encrypted", true)
+                } else {
+                    val key = vaultSessionKey
+                    if (key != null) {
+                        obj.put("text", VaultCrypto.encrypt(note.text, key))
+                        obj.put("encrypted", true)
+                    } else {
+                        obj.put("text", note.text)
+                        obj.put("encrypted", false)
+                    }
+                }
+                obj.put("locked", true)
+            } else {
+                obj.put("text", note.text)
+                obj.put("locked", false)
+            }
             array.put(obj)
         }
         getApplication<Application>().dataStore.edit { it[NOTES_KEY] = array.toString() }

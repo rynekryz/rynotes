@@ -157,7 +157,10 @@ private fun TrashNoteRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                val displayTitle = note.title.ifBlank { note.text.ifBlank { "Untitled note" } }
+                val displayTitle = when {
+                    note.encrypted -> "Locked note"
+                    else -> note.title.ifBlank { note.text.ifBlank { "Untitled note" } }
+                }
                 Text(
                     text = displayTitle,
                     style = MaterialTheme.typography.titleMedium,

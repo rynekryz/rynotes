@@ -12,8 +12,8 @@ android {
         applicationId = "com.rynekryz.rynotes"
         minSdk = 31
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.1.1-beta"
+        versionCode = 12
+        versionName = "0.2.0-beta"
     }
     buildFeatures {
         compose = true

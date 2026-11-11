@@ -15,7 +15,8 @@ data class Note(
     val tags: List<String> = emptyList(),
     val trashedAt: Long? = null,
     val archivedAt: Long? = null,
-    val locked: Boolean = false
+    val locked: Boolean = false,
+    val encrypted: Boolean = false
 )
 
 enum class NoteColor {

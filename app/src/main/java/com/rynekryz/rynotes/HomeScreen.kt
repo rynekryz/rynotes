@@ -1,6 +1,7 @@
 package com.rynekryz.rynotes
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.draw.scale
@@ -65,7 +66,9 @@ fun HomeScreen(
     var filter by remember { mutableStateOf<HomeFilter>(HomeFilter.All) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val haptics = rememberHaptics(LocalHapticsEnabled.current)
     var showNewFolderDialog by remember { mutableStateOf(false) }
+    var folderToDelete by remember { mutableStateOf<NoteFolder?>(null) }
 
     val pdfPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -107,6 +110,7 @@ fun HomeScreen(
                 onSelectFolder = { id -> filter = HomeFilter.Folder(id); scope.launch { drawerState.close() } },
                 onSelectTag = { tag -> filter = HomeFilter.Tag(tag); scope.launch { drawerState.close() } },
                 onNewFolder = { showNewFolderDialog = true },
+                onDeleteFolder = { folderToDelete = it },
                 onVaultClick = { scope.launch { drawerState.close() }; onNavigateToVault() },
                 onTrashClick = { scope.launch { drawerState.close() }; onNavigateToTrash() },
                 onOpenPdfClick = { scope.launch { drawerState.close() }; pdfPickerLauncher.launch(arrayOf("application/pdf")) },
@@ -170,6 +174,30 @@ fun HomeScreen(
         }
     }
 
+    if (folderToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { folderToDelete = null },
+            title = { Text("Delete folder?") },
+            text = { Text("Notes in \"${folderToDelete?.name}\" will be moved to All notes. This can't be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        haptics.confirm()
+                        viewModel.deleteFolder(folderToDelete!!.id)
+                        if (filter is HomeFilter.Folder && (filter as HomeFilter.Folder).id == folderToDelete?.id) {
+                            filter = HomeFilter.All
+                        }
+                        folderToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToDelete = null }) { Text("Cancel") }
+            }
+        )
+    }
+
     if (showNewFolderDialog) {
         var name by remember { mutableStateOf("") }
         val dialogHaptics = rememberHaptics(LocalHapticsEnabled.current)
@@ -211,6 +239,7 @@ private fun HomeDrawerContent(
     onSelectFolder: (String) -> Unit,
     onSelectTag: (String) -> Unit,
     onNewFolder: () -> Unit,
+    onDeleteFolder: (NoteFolder) -> Unit,
     onVaultClick: () -> Unit,
     onTrashClick: () -> Unit,
     onOpenPdfClick: () -> Unit,
@@ -252,6 +281,19 @@ private fun HomeDrawerContent(
                     icon = { Icon(Icons.Filled.Folder, contentDescription = null) },
                     selected = selectedFilter is HomeFilter.Folder && selectedFilter.id == folder.id,
                     onClick = { haptics.click(); onSelectFolder(folder.id) },
+                    badge = {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Delete folder",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    haptics.click()
+                                    onDeleteFolder(folder)
+                                }
+                        )
+                    },
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
             }
@@ -438,7 +480,7 @@ fun NoteGridCard(
                         )
                         Spacer(Modifier.height(4.dp))
                     }
-                    if (note.text.isNotBlank()) {
+                    if (!note.encrypted && note.text.isNotBlank()) {
                         Text(
                             text = note.text,
                             style = MaterialTheme.typography.bodyMedium,

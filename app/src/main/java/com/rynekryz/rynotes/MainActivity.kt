@@ -40,6 +40,7 @@ private sealed class Screen {
     data object Settings : Screen()
     data object Trash : Screen()
     data object Vault : Screen()
+    data object Licenses : Screen()
     data class Editor(val noteId: String) : Screen()
     data class Pdf(val uri: String) : Screen()
 }
@@ -244,8 +245,12 @@ private fun RyNotesApp(
                     onOpenNote = { id -> push(Screen.Editor(id)) }
                 ) { uri -> push(Screen.Pdf(uri.toString())) }
                 is Screen.Settings -> SettingsScreen(
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    onNavigateToLicenses = { push(Screen.Licenses) }
                 ) { pop() }
+                is Screen.Licenses -> LicensesScreen(
+                    onBack = { pop() }
+                )
                 is Screen.Trash -> TrashScreen(
                     viewModel = viewModel
                 ) { pop() }
@@ -280,6 +285,7 @@ private fun encodeScreen(screen: Screen): String = when (screen) {
     is Screen.Settings -> "settings"
     is Screen.Trash -> "trash"
     is Screen.Vault -> "vault"
+    is Screen.Licenses -> "licenses"
     is Screen.Editor -> "editor:${screen.noteId}"
     is Screen.Pdf -> "pdf:${screen.uri}"
 }
@@ -289,6 +295,7 @@ private fun decodeScreen(value: String): Screen = when {
     value == "settings" -> Screen.Settings
     value == "trash" -> Screen.Trash
     value == "vault" -> Screen.Vault
+    value == "licenses" -> Screen.Licenses
     value.startsWith("editor:") -> Screen.Editor(value.removePrefix("editor:"))
     value.startsWith("pdf:") -> Screen.Pdf(value.removePrefix("pdf:"))
     else -> Screen.Home

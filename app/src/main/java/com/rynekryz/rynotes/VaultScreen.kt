@@ -27,17 +27,16 @@ fun VaultScreen(
     onOpenNote: (String) -> Unit,
     onSetUpVault: () -> Unit,
 ) {
-    var unlocked by remember { mutableStateOf(value = false) }
     var pin by remember { mutableStateOf(value = "") }
     var secret by remember { mutableStateOf(value = "") }
     var error by remember { mutableStateOf(value = false) }
     val haptics = rememberHaptics(viewModel.hapticsEnabled)
     val context = LocalContext.current
     val activity = context as? FragmentActivity
+    val unlocked = viewModel.vaultUnlocked
 
     fun attempt(value: String) {
         if (viewModel.tryUnlockVault(value)) {
-            unlocked = true
             error = false
             haptics.confirm()
         } else {
@@ -55,7 +54,10 @@ fun VaultScreen(
             subtitle = "Use your fingerprint to continue",
             onSuccess = {
                 haptics.confirm()
-                if (viewModel.unlockVaultWithBiometrics()) unlocked = true
+                if (!viewModel.unlockVaultWithBiometrics()) {
+                    error = true
+                    haptics.reject()
+                }
             }
         )
     }
@@ -71,6 +73,13 @@ fun VaultScreen(
                 navigationIcon = {
                     IconButton(onClick = { haptics.click(); onBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (unlocked) {
+                        IconButton(onClick = { haptics.click(); viewModel.lockVault() }) {
+                            Icon(Icons.Filled.Lock, contentDescription = "Lock vault")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
