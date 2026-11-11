@@ -19,14 +19,15 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-private class LicenseEntry(val title: String, val subtitle: String, val rawRes: Int)
+private class LicenseEntry(val title: String, val subtitle: String, val rawRes: Int?)
 
 private val licenseEntries = listOf(
     LicenseEntry("RyNotes", "GNU General Public License v3.0 or later", R.raw.license_gpl3),
-    LicenseEntry("AndroidX & Jetpack libraries", "activity-compose, biometric, fragment, lifecycle, datastore-preferences · Apache License 2.0", R.raw.license_apache2),
-    LicenseEntry("Jetpack Compose & Material 3", "by Google · Apache License 2.0", R.raw.license_apache2),
-    LicenseEntry("Material Icons", "by Google · Apache License 2.0", R.raw.license_apache2),
-    LicenseEntry("Kotlin standard library", "by JetBrains · Apache License 2.0", R.raw.license_apache2)
+    LicenseEntry("AndroidX libraries", "activity-compose, biometric, fragment, lifecycle, datastore-preferences · Apache License 2.0", R.raw.license_apache2),
+    LicenseEntry("Jetpack Compose", "compose ui, runtime, runtime-saveable, tooling · Apache License 2.0", R.raw.license_apache2),
+    LicenseEntry("Material 3 and Material Icons", "material3, material-icons-extended, com.google.android.material · Apache License 2.0", R.raw.license_apache2),
+    LicenseEntry("Kotlin", "Kotlin standard library and kotlinx.coroutines by JetBrains · Apache License 2.0", R.raw.license_apache2),
+    LicenseEntry("Google Sans Flex", "Device font by Google, used through the system font family", null)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +37,6 @@ fun LicensesScreen(
 ) {
     val context = LocalContext.current
     val haptics = rememberHaptics(LocalHapticsEnabled.current)
-    var expandedIndex by rememberSaveable { mutableStateOf(-1) }
 
     Scaffold(
         topBar = {
@@ -60,7 +60,7 @@ fun LicensesScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "This app is free and open source software. The libraries it uses are licensed as follows. Tap a license to view its full text.",
+                text = "RyNotes is free and open source. These are the licenses of everything the app uses. Tap one to read the full text.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
@@ -78,14 +78,14 @@ fun LicensesScreen(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
                 ) {
                     Column {
+                        val expandable = entry.rawRes != null
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
+                                .clickable(enabled = expandable) {
                                     haptics.click()
                                     expanded = !expanded
-                                    expandedIndex = if (expanded) index else -1
                                 }
                                 .padding(horizontal = 16.dp, vertical = 14.dp)
                         ) {
@@ -98,14 +98,18 @@ fun LicensesScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            Icon(
-                                if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                                contentDescription = if (expanded) "Collapse" else "Expand",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            if (expandable) {
+                                Icon(
+                                    if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                    contentDescription = if (expanded) "Collapse" else "Expand",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
-                        if (expanded) {
-                            val text = remember(index) { context.resources.openRawResource(entry.rawRes).bufferedReader().readText() }
+                        if (expandable && expanded) {
+                            val text = remember(index) {
+                                context.resources.openRawResource(entry.rawRes!!).bufferedReader().readText()
+                            }
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                             Text(
                                 text = text,

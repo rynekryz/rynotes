@@ -311,7 +311,13 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = if (viewModel.hasAppLock) Icons.Filled.Lock else Icons.Filled.LockOpen,
                     title = "App lock",
-                    subtitle = if (viewModel.hasAppLock) "Locked with ${viewModel.appLockType.name.lowercase()}" else "Require a PIN, pattern, or password to open the app",
+                    subtitle = if (viewModel.hasAppLock) {
+                        "Locked with " + when (viewModel.appLockType) {
+                            LockType.PIN -> "PIN"
+                            LockType.PATTERN -> "pattern"
+                            LockType.PASSWORD -> "password"
+                        }
+                    } else "Require a PIN, pattern, or password to open the app",
                     roundingType = if (viewModel.hasAppLock) RoundingType.TOP else RoundingType.SINGLE,
                     trailingContent = {
                         Switch(
@@ -448,7 +454,7 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = Icons.Filled.Balance,
                     title = "Open source licenses",
-                    subtitle = "GNU GPL v3.0 and licenses of the libraries used",
+                    subtitle = "Licenses of the app and everything it uses",
                     roundingType = RoundingType.BOTTOM,
                     onClick = onNavigateToLicenses
                 )
@@ -574,7 +580,7 @@ fun SettingsScreen(
             icon = { Icon(Icons.Filled.Warning, contentDescription = null) },
             title = { Text("Restore this backup?") },
             text = {
-                Text("This replaces all current notes, folders, and settings — including app lock and vault — with what's in the backup file. This can't be undone.")
+                Text("This replaces all current notes, folders and settings with what's in the backup file, including app lock and vault. This can't be undone.")
             },
             confirmButton = {
                 TextButton(
