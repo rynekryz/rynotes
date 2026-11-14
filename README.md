@@ -5,8 +5,8 @@
 <p>Offers a beautiful, fluid user experience while prioritizing your privacy and organization.</p>
 </div>
 <p align="center">
-  <a href="https://github.com/rynekryz/rynotes/stargazers"><img src="https://img.shields.io/github/stars/rynekryz/rynotes?style=flat&logo=github&labelColor=5F5E5E&color=5F5E5E&logoColor=white&sort=semver" alt="GitHub stars" height="30"/></a>
-  <a href="https://github.com/rynekryz/rynotes/tags"><img src="https://img.shields.io/github/v/tag/rynekryz/rynotes?style=flat&logo=git&labelColor=5F5E5E&color=5F5E5E&logoColor=white&sort=semver" alt="Latest release" height="30"/></a>
+  <a href="https://github.com/rynekryz/rynotes/stargazers"><img src="assets/badges/stars.svg" alt="GitHub stars" height="30"/></a>
+  <a href="https://github.com/rynekryz/rynotes/tags"><img src="assets/badges/release.svg" alt="Latest release" height="30"/></a>
   <a href="LICENSE"><img src="assets/badges/licencegplv3.svg" alt="Licence GPLv3"/></a>
   <img src="assets/badges/android.svg" alt="Android"/>
   <img src="assets/badges/kotlin.svg" alt="Kotlin"/>
