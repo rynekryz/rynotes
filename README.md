@@ -12,8 +12,6 @@
   <img src="assets/badges/kotlin.svg" alt="Kotlin"/>
 </p>
 
-> **Status:** Early alpha. Expect bugs and breaking changes between versions. See [Releases](https://github.com/rynekryz/rynotes/releases) for the latest APK.
-
 ---
 
 ## Screenshots
@@ -54,8 +52,6 @@
 - **Markdown Support:** Write notes with lightweight Markdown-style formatting (Bold, Italic, Underline, Bullets).
 - **PDF Viewer:** View PDF documents directly within the app.
 - **Backup & Restore:** Export your data as a secure ZIP/JSON backup and restore it anytime.
-- **Haptic Feedback:** Tactile responses for a more immersive experience.
-- **Customization:** Adjust font scales and font types to your preference.
 
 ---
 
@@ -79,8 +75,6 @@ Grab the latest APK from the [Releases page](https://github.com/rynekryz/rynotes
 | `armv7` | Older 32-bit devices |
 | `x86_64` | Emulators / x86 devices |
 | `universal` | Works on any device, larger file size |
-
-> Alpha/Beta builds are **debug builds**, not signed for production release yet.
 
 ---
 
