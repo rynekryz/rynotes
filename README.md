@@ -1,8 +1,8 @@
 <div align="center">
 <img src="icon.png" width="160" height="160" style="display: block; margin: 0 auto"/>
 <h1>RyNotes</h1>
-<p>A modern, lightweight, and secure notes application for Android. Built with Jetpack Compose and Material 3 Expressive</p>
-<p>Offers a beautiful, fluid user experience while prioritizing your privacy and organization.</p>
+<p>A private notes app for Android, built with Jetpack Compose and Material 3 Expressive.</p>
+<p>Organize notes with folders, tags, and a vault, all stored on your device.</p>
 </div>
 <p align="center">
   <a href="https://github.com/rynekryz/rynotes/stargazers"><img src="assets/badges/stars.svg" alt="GitHub stars" height="30"/></a>
@@ -10,6 +10,10 @@
   <a href="LICENSE"><img src="assets/badges/licencegplv3.svg" alt="Licence GPLv3"/></a>
   <img src="assets/badges/android.svg" alt="Android"/>
   <img src="assets/badges/kotlin.svg" alt="Kotlin"/>
+</p>
+
+<p align="center">
+  <a href="https://github.com/rynekryz/rynotes/releases"><img src="assets/badges/getgithub.svg" alt="Get it on GitHub" height="56"/></a>
 </p>
 
 ---
@@ -29,72 +33,44 @@
 
 ## Features
 
-### Beautiful Design
-- **Material 3 Expressive:** Leveraging the latest Material 3 components for a bold and modern look.
-- **Dynamic Color (Material You):** Themes that adapt to your wallpaper (Android 12+).
-- **Dark Mode & OLED Support:** Support for standard dark mode and a "Pure Black" mode for OLED screens.
-- **Note Colors:** Personalize notes with 6 curated accent colors.
-
-### Privacy & Security
-- **App Lock:** Secure the entire app using a PIN, Pattern, Password, or Biometric authentication.
-- **The Vault:** A dedicated private space for your most sensitive notes, protected by its own secret.
-- **Biometric Integration:** Seamlessly unlock your app or vault using fingerprint or face unlock.
-
-### Organization & Workflow
-- **Folders:** Categorize your notes into custom folders for better management.
-- **Tags:** Add searchable tags to your notes.
-- **Pin & Favorite:** Keep important notes at the top or mark them for easy access.
-- **Archive:** Hide notes from your main grid without deleting them.
-- **Trash Bin:** Deleted notes are safely kept for 30 days before being permanently removed.
-- **Search:** Quickly find notes with real-time title and content search.
-
-### Advanced Tools
-- **Markdown Support:** Write notes with lightweight Markdown-style formatting (Bold, Italic, Underline, Bullets).
-- **PDF Viewer:** View PDF documents directly within the app.
-- **Backup & Restore:** Export your data as a secure ZIP/JSON backup and restore it anytime.
+- Material 3 Expressive, with dynamic color from your wallpaper (Android 12+)
+- Dark mode and a pure black OLED mode
+- Six curated note colors, so things feel like yours
+- App lock with PIN, pattern, password, or biometrics
+- A Vault with its own secret for the sensitive stuff (your diary is safe here)
+- Folders, tags, pin, favorite, and archive
+- Trash that holds deleted notes for 30 days, in case you change your mind (you will)
+- Real-time search across titles and content
+- Light Markdown (bold, italic, underline, bullets)
+- Built-in PDF viewer
+- Backup and restore as a ZIP/JSON file
+- etc.
 
 ---
 
 ## Technical Stack
 
 - **UI:** Jetpack Compose with Material 3 Expressive
-- **Architecture:** MVVM (Model-View-ViewModel)
-- **Data Persistence:** Jetpack DataStore (Preferences)
-- **Language:** 100% Kotlin
-- **Build System:** Gradle (Kotlin DSL)
+- **Architecture:** MVVM
+- **Persistence:** DataStore Preferences
+- **Security:** BiometricPrompt with an AES vault
+- **Language:** Kotlin
+- **Build:** Gradle (Kotlin DSL)
 
 ---
 
-## Download
+## Building
 
-Grab the latest APK from the [Releases page](https://github.com/rynekryz/rynotes/releases). Pick the build matching your device:
+You'll need Android Studio (latest stable), JDK 21, and SDK 37. Minimum is Android 12 (API 31).
 
-| Variant | Use case |
-|---|---|
-| `arm64` | Most modern phones (recommended) |
-| `armv7` | Older 32-bit devices |
-| `x86_64` | Emulators / x86 devices |
-| `universal` | Works on any device, larger file size |
-
----
-
-## Getting Started
-
-### Prerequisites
-- Android Studio (latest stable)
-- JDK 21
-- Android SDK 37 (compile target)
-- Minimum SDK: Android 12 (API 31)
-
-### Build
-1. Clone the repository.
-2. Open the project in Android Studio.
-3. Sync Gradle and run the `:app` module.
+1. Clone the repo and open it in Android Studio.
+2. Sync Gradle and run the `:app` module.
 
 ```bash
-# Build debug APK (all ABIs + universal)
 ./gradlew assembleDebug
 ```
+
+`arm64` fits most phones, `armv7` is for older 32-bit ones, `x86_64` is for emulators, and `universal` works anywhere if you're not sure.
 
 ---
 
@@ -102,31 +78,22 @@ Grab the latest APK from the [Releases page](https://github.com/rynekryz/rynotes
 
 ```
 RyNotes/
-├── app/
-│   ├── src/main/java/com/rynekryz/rynotes/
-│   │   ├── MainActivity.kt       # Navigation & Entry Point
-│   │   ├── HomeScreen.kt         # Main Grid & Search
-│   │   ├── NoteEditorScreen.kt   # Rich Note Editing
-│   │   ├── VaultScreen.kt        # Secure Notes Container
-│   │   ├── SettingsScreen.kt     # App Preferences & Backup
-│   │   ├── NoteViewModel.kt      # Core Logic & Persistence
-│   │   ├── Note.kt               # Data Models
-│   │   └── ...                   # Biometrics, Haptics, Theme, etc.
-│   └── src/main/AndroidManifest.xml
-└── ...
+└── app/src/main/java/com/rynekryz/rynotes/
+    ├── MainActivity.kt
+    ├── HomeScreen.kt
+    ├── NoteEditorScreen.kt
+    ├── VaultScreen.kt
+    ├── SettingsScreen.kt
+    ├── NoteViewModel.kt
+    ├── Note.kt
+    └── ...
 ```
 
 ---
 
 ## License
 
-Distributed under the GNU General Public License v3.0 (GPLv3). See [LICENSE](LICENSE) for more information.
-
----
-
-## Contributing
-
-Contributions are welcome! Feel free to open [issues](https://github.com/rynekryz/rynotes/issues) or submit pull requests.
+Licensed under GPL-3.0. See [LICENSE](LICENSE).
 
 <div align="center">
 <strong>Made with ♥︎ by Ryne</strong>
